@@ -1,0 +1,21 @@
+[package]
+name = "alta-worker"
+version.workspace = true
+edition.workspace = true
+
+[[bin]]
+name = "alta-worker"
+path = "src/main.rs"
+
+[dependencies]
+alta-kernel = { workspace = true }
+alta-application = { workspace = true }
+alta-infrastructure = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+sqlx = { workspace = true }
+tracing = { workspace = true }
+anyhow = { workspace = true }

@@ -1,0 +1,9 @@
+name: container
+on: { push: { branches: [main] } }
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -f deploy/Dockerfile.api -t alta-api:ci .
+      - run: docker build -f deploy/Dockerfile.worker -t alta-worker:ci .

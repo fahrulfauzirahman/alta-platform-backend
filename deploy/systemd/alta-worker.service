@@ -1,0 +1,9 @@
+[Unit]
+Description=ALTA Worker
+After=network.target postgresql.service
+[Service]
+ExecStart=/usr/local/bin/alta-worker
+EnvironmentFile=/etc/alta/worker.env
+Restart=always
+[Install]
+WantedBy=multi-user.target

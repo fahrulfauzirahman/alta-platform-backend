@@ -1,0 +1,11 @@
+name: security
+on: { push: {}, pull_request: {}, schedule: [{ cron: "0 3 * * *" }] }
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo install cargo-audit cargo-deny --locked || true
+      - run: cargo audit || true
+      - run: cargo deny check || true

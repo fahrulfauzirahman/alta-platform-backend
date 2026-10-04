@@ -1,0 +1,9 @@
+[Unit]
+Description=ALTA API
+After=network.target postgresql.service
+[Service]
+ExecStart=/usr/local/bin/alta-api
+EnvironmentFile=/etc/alta/api.env
+Restart=always
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,56 @@
+openapi: 3.0.3
+info:
+  title: ALTA Platform API
+  version: 0.1.0
+paths:
+  /healthz:
+    get:
+      operationId: healthz
+      responses:
+        '200': { description: ok }
+  /readyz:
+    get:
+      operationId: readyz
+      responses:
+        '200': { description: ready }
+        '503': { description: not ready }
+  /v1/session:
+    get:
+      operationId: getSession
+      parameters:
+        - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
+        - { name: X-Actor-Id, in: header, required: false, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: session }
+  /v1/reference-items:
+    get:
+      operationId: listReferenceItems
+      parameters:
+        - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
+        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+      responses:
+        '200': { description: list }
+    post:
+      operationId: createReferenceItem
+      parameters:
+        - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
+        - { name: Idempotency-Key, in: header, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, maxLength: 200 }
+      responses:
+        '201': { description: created }
+        '200': { description: replayed }
+  /v1/events:
+    get:
+      operationId: streamEvents
+      parameters:
+        - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
+      responses:
+        '200': { description: sse stream }

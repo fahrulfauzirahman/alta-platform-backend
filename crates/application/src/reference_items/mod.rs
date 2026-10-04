@@ -55,3 +55,26 @@ impl ReferenceItemService {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn rejects_empty_title() {
+        let r = CreateReferenceItem { title: "  ".to_string() }.validate();
+        assert!(r.is_err());
+    }
+
+    #[test]
+    fn builds_created_event_type() {
+        let item = ReferenceItem {
+            id: uuid::Uuid::new_v4(),
+            tenant_id: alta_kernel::TenantId::new(),
+            title: "hello".to_string(),
+            created_at: chrono::Utc::now(),
+        };
+        let env = ReferenceItemService::build_created_event(&item);
+        assert_eq!(env.event_type, "reference_item.created.v1");
+    }
+}

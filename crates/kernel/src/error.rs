@@ -81,3 +81,21 @@ impl AppError {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn status_mapping() {
+        assert_eq!(ErrorCode::Unauthorized.http_status(), 401);
+        assert_eq!(ErrorCode::ValidationFailed.http_status(), 422);
+        assert_eq!(ErrorCode::Internal.http_status(), 500);
+    }
+
+    #[test]
+    fn message_sanitized_by_caller() {
+        let e = AppError::validation("title must not be empty");
+        assert_eq!(e.code(), ErrorCode::ValidationFailed);
+    }
+}

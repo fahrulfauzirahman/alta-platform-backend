@@ -68,6 +68,12 @@ impl AppError {
     pub fn conflict(msg: impl Into<String>) -> Self {
         Self::Known { code: ErrorCode::Conflict, message: msg.into() }
     }
+    pub fn idempotency_conflict(msg: impl Into<String>) -> Self {
+        Self::Known { code: ErrorCode::IdempotencyConflict, message: msg.into() }
+    }
+    pub fn rate_limited(msg: impl Into<String>) -> Self {
+        Self::Known { code: ErrorCode::RateLimited, message: msg.into() }
+    }
     pub fn code(&self) -> ErrorCode {
         match self {
             Self::Known { code, .. } => *code,

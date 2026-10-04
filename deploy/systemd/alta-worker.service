@@ -2,8 +2,13 @@
 Description=ALTA Worker
 After=network.target postgresql.service
 [Service]
+User=app
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
 ExecStart=/usr/local/bin/alta-worker
 EnvironmentFile=/etc/alta/worker.env
 Restart=always
+TimeoutStopSec=30
 [Install]
 WantedBy=multi-user.target

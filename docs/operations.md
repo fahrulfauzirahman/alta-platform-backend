@@ -1,6 +1,9 @@
 # Operations
 
-- Migrations run from empty DB via `./scripts/migrate.sh`.
-- Worker restart-safe via `FOR UPDATE SKIP LOCKED`.
-- Logs are JSON with request_id; secrets never logged.
-- Systemd units in `deploy/systemd`.
+- Migrations run from empty DB via `./scripts/migrate.sh` (requires `DATABASE_URL` and `sqlx-cli` with postgres feature; equivalent `psql -f migrations/000*.sql` in order works; rerun is safe via `IF NOT EXISTS`; no down migrations — rollback is forward-only manual SQL, test on a copy first). 0005 adds nullable `platform_idempotency.request_hash` + job lease index, backward compatible.
+- Canonical env: `DATABASE_URL`, `ADDR` (alias `API_ADDR` also accepted), `RUST_LOG`/`LOG_FILTER`, `AUTH_HS256_SECRET` (empty = header-trust local mode), `RATE_LIMIT_PER_MIN` (default 200), `ALLOWED_ORIGINS` (empty = no CORS). API listens on `ADDR`/`API_ADDR`, default `0.0.0.0:8080`.
+- Worker is a long-running loop (2s poll), restart-safe via single-statement `WITH claimed AS (...) SELECT FOR UPDATE SKIP LOCKED` + `UPDATE ... RETURNING`; only `dispatched_at IS NULL` rows are claimed. Job leases: `claim_job(lease_secs)` atomically leases one `pending` (or expired `leased`) job with `SKIP LOCKED`, `complete_job` → `done`, `fail_job` → `failed`; exactly-one-winner under concurrency (tested). Run one worker per DB for foundation; concurrent workers are safe from double-claim via `SKIP LOCKED`.
+- SSE is multi-instance safe: live `broadcast` merged with 2s DB poll since last `event_id` (deduped), plus `Last-Event-ID` replay from `platform_outbox` (last 100 per tenant, `(created_at,id)` order). Caddy sets `flush_interval -1`; API sends `EventEnvelope` with `id: <event_id>`.
+- Logs are JSON with startup/shutdown and worker batch counts; `request_id` is returned in error envelopes and `X-Request-Id` header; `readyz` returns generic `not_ready` (details logged server-side).
+- Systemd units in `deploy/systemd` run as `User=app` with `NoNewPrivileges`, `ProtectSystem=strict`, `TimeoutStopSec=30`; both handle `SIGTERM` + `Ctrl-C`.
+- Backup: `./scripts/backup.sh` (`pg_dump -Fc` to `./backups/alta_<ts>.dump`, `BACKUP_DIR` override); restore to empty DB then rerun `./scripts/migrate.sh` to confirm version; test restores regularly; retain PITR/WAL per platform policy (not included in foundation). Drill: backup → restore to fresh DB → `migrate.sh` → `readyz` 200 → spot-check `reference_items` count.

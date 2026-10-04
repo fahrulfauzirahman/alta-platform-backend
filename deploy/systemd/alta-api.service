@@ -2,8 +2,13 @@
 Description=ALTA API
 After=network.target postgresql.service
 [Service]
+User=app
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
 ExecStart=/usr/local/bin/alta-api
 EnvironmentFile=/etc/alta/api.env
 Restart=always
+TimeoutStopSec=30
 [Install]
 WantedBy=multi-user.target

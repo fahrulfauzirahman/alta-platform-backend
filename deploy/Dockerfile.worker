@@ -4,6 +4,7 @@ COPY . .
 RUN cargo build --release -p alta-worker
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/* && useradd -m -u 10001 app
 COPY --from=builder /app/target/release/alta-worker /usr/local/bin/alta-worker
+USER app
 CMD ["alta-worker"]

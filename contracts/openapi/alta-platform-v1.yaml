@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: ALTA Platform API
-  version: 0.1.0
+  version: 0.2.0
 paths:
   /healthz:
     get:
@@ -18,23 +18,30 @@ paths:
     get:
       operationId: getSession
       parameters:
+        - { name: Authorization, in: header, required: false, schema: { type: string }, description: 'Bearer <HS256 JWT with tid/exp> when AUTH_HS256_SECRET is set' }
         - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
         - { name: X-Actor-Id, in: header, required: false, schema: { type: string, format: uuid } }
       responses:
         '200': { description: session }
+        '401': { description: missing or invalid bearer token when auth enforced }
+        '403': { description: tenant mismatch between token and header }
   /v1/reference-items:
     get:
       operationId: listReferenceItems
       parameters:
+        - { name: Authorization, in: header, required: false, schema: { type: string } }
         - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
-        - { name: limit, in: query, schema: { type: integer, default: 50 } }
+        - { name: limit, in: query, schema: { type: integer, default: 50, minimum: 1, maximum: 200 } }
+        - { name: cursor, in: query, required: false, schema: { type: string }, description: 'opaque keyset cursor "<micros>:<uuid>" from next_cursor' }
       responses:
-        '200': { description: list }
+        '200': { description: list with items and next_cursor }
+        '422': { description: invalid cursor }
     post:
       operationId: createReferenceItem
       parameters:
+        - { name: Authorization, in: header, required: false, schema: { type: string } }
         - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
-        - { name: Idempotency-Key, in: header, schema: { type: string } }
+        - { name: Idempotency-Key, in: header, schema: { type: string, maxLength: 128 } }
       requestBody:
         required: true
         content:
@@ -47,10 +54,14 @@ paths:
       responses:
         '201': { description: created }
         '200': { description: replayed }
+        '409': { description: idempotency key reused with different payload (IDEMPOTENCY_CONFLICT) }
+        '429': { description: per-tenant rate limit exceeded (RATE_LIMITED) }
   /v1/events:
     get:
       operationId: streamEvents
       parameters:
+        - { name: Authorization, in: header, required: false, schema: { type: string } }
         - { name: X-Tenant-Id, in: header, required: true, schema: { type: string, format: uuid } }
+        - { name: Last-Event-ID, in: header, required: false, schema: { type: string, format: uuid }, description: 'replay missed tenant outbox rows then live stream' }
       responses:
-        '200': { description: sse stream }
+        '200': { description: sse stream of EventEnvelope with id }

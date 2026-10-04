@@ -7,6 +7,9 @@ async fn main() -> anyhow::Result<()> {
             addr: "0.0.0.0:8080".to_string(),
             database_url: std::env::var("DATABASE_URL").unwrap_or_default(),
             log_filter: "info,alta=debug".to_string(),
+            auth_hs256_secret: String::new(),
+            rate_limit_per_min: 200,
+            allowed_origins: String::new(),
         },
     );
     alta_infrastructure::observability::init_tracing(&cfg.log_filter);
@@ -22,7 +25,7 @@ async fn main() -> anyhow::Result<()> {
 
     loop {
         tokio::select! {
-            _ = tokio::signal::ctrl_c() => {
+            _ = shutdown_signal() => {
                 tracing::info!("worker shutdown requested");
                 break;
             }
@@ -38,6 +41,21 @@ async fn main() -> anyhow::Result<()> {
             }
         }
     }
-    // Graceful: pool closes on drop.
     Ok(())
+}
+
+async fn shutdown_signal() {
+    #[cfg(unix)]
+    {
+        let mut term = tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+            .expect("sigterm handler");
+        tokio::select! {
+            _ = tokio::signal::ctrl_c() => {},
+            _ = term.recv() => {},
+        }
+    }
+    #[cfg(not(unix))]
+    {
+        let _ = tokio::signal::ctrl_c().await;
+    }
 }

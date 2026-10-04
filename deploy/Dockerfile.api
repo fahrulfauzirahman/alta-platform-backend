@@ -4,7 +4,9 @@ COPY . .
 RUN cargo build --release -p alta-api
 
 FROM debian:bookworm-slim
-RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ca-certificates curl && rm -rf /var/lib/apt/lists/* && useradd -m -u 10001 app
 COPY --from=builder /app/target/release/alta-api /usr/local/bin/alta-api
+USER app
 EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=3s --retries=3 CMD curl -f http://127.0.0.1:8080/healthz || exit 1
 CMD ["alta-api"]
